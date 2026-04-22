@@ -173,4 +173,39 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+########################################
+# ML / DL project additions
+########################################
+
+# --- Data ---
+data/
+datasets/
+nnUNet_raw/
+nnUNet_preprocessed/
+nnUNet_results/
+1-200/
+*/imagesTr/
+*/imagesTs/
+*/labelsTr/
+
+# --- Models / checkpoints ---
+models/
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+
+# --- Logs ---
+logs/
+wandb/
+tensorboard/
+*.log
+
+# --- Temporary / cache ---
+tmp/
+temp/
+*.tmp
+*.swp
+
+
 # End of https://www.toptal.com/developers/gitignore/api/python
