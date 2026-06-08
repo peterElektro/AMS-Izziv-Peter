@@ -10,6 +10,7 @@ import numpy as np
 
 from models.stunet import build_stunet
 from dataloaders.nnunet_loader import create_dataloader
+from losses import BCEDiceLoss
 
 
 def compute_pos_weight(labels_dir):
@@ -23,15 +24,6 @@ def compute_pos_weight(labels_dir):
     if fg == 0:
         return 1.0
     return float(tot / (2.0 * fg))
-
-
-def dice_loss_from_logits(logits, target):
-    probs = torch.sigmoid(logits)
-    probs_flat = probs.reshape(probs.shape[0], -1)
-    target_flat = target.reshape(target.shape[0], -1)
-    num = 2.0 * (probs_flat * target_flat).sum(dim=1)
-    den = probs_flat.sum(dim=1) + target_flat.sum(dim=1) + 1e-8
-    return (1.0 - num / den).mean()
 
 
 def validate(model, val_loader, device):
@@ -73,8 +65,10 @@ def train(model, dataset, output_dir, epochs, dataset_dir=None, resume_path=None
     pos_weight = compute_pos_weight(labels_tr_dir)
     print(f"[run_train] Using device: {device} | pos_weight: {pos_weight:.4f}")
 
-    bce_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=device))
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    criterion = BCEDiceLoss(bce_weight=0.5, dice_weight=0.5)
+    optimizer = optim.AdamW(model.parameters(), lr=lr)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+
     scaler = GradScaler(device="cuda") if (use_amp and device.type == "cuda") else None
 
     best_val_dice = 0.0
@@ -94,26 +88,21 @@ def train(model, dataset, output_dir, epochs, dataset_dir=None, resume_path=None
             if use_amp and scaler is not None:
                 with autocast(device_type=device.type):
                     outputs = model(imgs)
-                    logits_fg = outputs
-                    bce = bce_loss_fn(logits_fg, labels_f)
-                    dice_l = dice_loss_from_logits(logits_fg, labels_f)
-                    loss = dice_l + 0.5 * bce
+                    loss = criterion(outputs, labels_f)
 
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
             else:
                 outputs = model(imgs)
-                logits_fg = outputs
-                bce = bce_loss_fn(logits_fg, labels_f)
-                dice_l = dice_loss_from_logits(logits_fg, labels_f)
-                loss = dice_l + 0.5 * bce
-
+                loss = criterion(outputs, labels_f)
                 loss.backward()
                 optimizer.step()
 
             running_loss += float(loss.item())
             n_batches += 1
+
+        scheduler.step()
 
         avg_train_loss = running_loss / max(1, n_batches)
         mean_dice, std_dice, min_dice, max_dice = validate(model, val_loader, device)
