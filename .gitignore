@@ -207,5 +207,29 @@ temp/
 *.tmp
 *.swp
 
+# --- Medical imaging data ---
+*.nii
+*.nii.gz
+*.mha
+*.nrrd
+
+# --- Local predictions and visualizations ---
+prediction_*.nii.gz
+*.png
+
+# --- Preprocessed data ---
+data_preproc/
+predictions/
+outputs/
+
+# --- Large model files ---
+#*.pt
+#*.pth
+#*.ckpt
+
+# --- Slicer exports ---
+*.seg.nrrd
+*.seg.nii.gz
+
 
 # End of https://www.toptal.com/developers/gitignore/api/python
