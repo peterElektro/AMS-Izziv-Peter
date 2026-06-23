@@ -86,7 +86,6 @@ python run_inference.py \
 **Rezultati**
 - Mean Dice: 0.20
 - Mean HD95: 175 mm
-![STU‑Net vizualizacija](gif_AMSIzziv.gif)
 <p align="center">
   <img src="gif_AMSIzziv.gif" width="600">
 </p>
