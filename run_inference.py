@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-run_inference.py
-Robustna skripta za sliding-window inferenco nad mapo z NIfTI volumni.
+run_inference.py – STU-Net kompatibilna inferenca
+Usklajena z nnunet_loader.py preprocessingom.
 """
 
 import argparse
@@ -12,12 +12,11 @@ import torch
 import importlib
 from scipy.ndimage import label
 
-# 🔥 NOVO: uvozimo modularni sliding-window
 from inference.sliding_window import sliding_window_inference
 
 
 # -------------------------
-# Model loader (robust)
+# Model loader
 # -------------------------
 def load_model(model_path, model_module, device):
     model_path = Path(model_path)
@@ -42,7 +41,6 @@ def load_model(model_path, model_module, device):
                 state = ckpt["model_state"]
             else:
                 state = ckpt
-
 
             try:
                 model.load_state_dict(state)
@@ -98,14 +96,15 @@ def process_file(path, model, device, out_dir,
     img = nib.load(str(path))
     vol = img.get_fdata().astype(np.float32)
 
-    # Normalizacija
+    # 🔥 KLJUČNO: enaka normalizacija kot v treningu
+    vol = np.clip(vol, -200, 800)
     vol = (vol - vol.mean()) / (vol.std() + 1e-8)
 
     # Channel-first
     if vol.ndim == 3:
         vol = vol[np.newaxis, ...]
 
-    # 🔥 KLIC modularnega sliding-window
+    # Sliding-window inferenca
     probs = sliding_window_inference(
         volume=vol,
         model=model,
