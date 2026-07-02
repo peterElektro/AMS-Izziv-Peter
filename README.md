@@ -367,3 +367,15 @@ Vključuje:
 > - evalvacijo,
 > - primerjavo z nnU-Net baseline,
 > - popolno reproducibilnost v Docker okolju.
+
+## 📂 Dodatne razvojne skripte
+
+Mapa `pomozneFunkcije/` vsebuje razvojne skripte, ki so bile uporabljene med implementacijo projekta:
+
+- preverjanje podatkov,
+- debugiranje modela,
+- evalvacijo,
+- eksperimentalne nastavitve,
+- pripravo podatkov.
+
+Te skripte niso potrebne za osnovni potek (trening, inferenca in evalvacija), vendar so vključene zaradi preglednosti razvoja projekta in reproducibilnosti posameznih korakov.
