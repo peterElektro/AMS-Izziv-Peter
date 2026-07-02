@@ -1,270 +1,233 @@
-<h1 style="color:#2b7cff; font-size:32px; font-weight:700; margin-bottom:0;">
-STU‑Net za segmentacijo koronarnih arterij (AMS Izziv 2026)
-</h1>
+# 🚀 STU‑Net za segmentacijo koronarnih arterij (AMS Izziv 2026)
 
-<p style="font-size:17px; line-height:1.55;">
-Implementacija 3D STU‑Net‑Lite+ za segmentacijo koronarnih arterij (CAS) na CTA volumnih iz dataseta ImageCAS.
-<br><br>
-Projekt je bil najprej v celoti razvit na lokalnem PC‑ju, nato pa reproduciran v Docker okolju na LSTWorker strežniku, kjer so bile prilagojene poti, ukazi in sintakse zaradi novejših različic knjižnic.
-</p>
+Implementacija 3D STU‑Net‑Lite+ za segmentacijo koronarnih arterij (CAS) na CTA volumnih iz dataseta ImageCAS.  
+Projekt je bil najprej razvit lokalno, nato popolnoma reproduciran v Docker okolju na LSTWorker strežniku.
 
-<hr style="border:1px solid #2b7cff;">
+Za učenje sem uporabil **manjši obseg podatkov (1–160)**, ker imam doma **slabši internet** in bi polni trening (1–600) trajal predolgo.  
+Validacija je bila izvedena na **161–180**, končna evalvacija pa na **181–200**.
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-Zahteve iz AMS izziva
-</h2>
+---
 
-<ul style="font-size:17px; line-height:1.55;">
-<li>delujoč trening</li>
-<li>validacija</li>
-<li>testiranje</li>
-<li>primerjava z nnU‑Net baseline</li>
-<li>popolna reproducibilnost (Docker)</li>
-</ul>
+## ⭐ Highlights
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-Repozitorij vsebuje
-</h2>
+- ⚡ 3D STU‑Net‑Lite+ implementacija  
+- 📦 nnU‑Net kompatibilen dataloader  
+- 🧠 Patch‑based training (128³)  
+- 📊 Dice metrika + validacija po epochah  
+- 🪟 Sliding‑window 3D inferenca  
+- 🔁 nnU‑Net baseline za primerjavo  
+- 🐳 Docker reproducibilnost  
+- 🔄 Podpora za 4-fold cross‑validation  
+- 🎞 GIF vizualizacija segmentacij  
+- 📈 Rezultati za STU‑Net in nnU‑Net
 
-<ul style="font-size:17px; line-height:1.55;">
-<li>STU‑Net‑Lite+ model</li>
-<li>nnU‑Net kompatibilen dataloader</li>
-<li>optimiziran trening pipeline</li>
-<li>validacijo z Dice metriko</li>
-<li>sliding‑window inferenco</li>
-<li>baseline primerjavo</li>
-<li>vizualizacijo segmentacij (GIF)</li>
-<li>Dockerfile za reproducibilnost</li>
-</ul>
+---
 
-<hr style="border:1px solid #2b7cff;">
+## 📁 Struktura projekta
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-Docker reproducibilnost
-</h2>
+AMS-Izziv-Peter/
+│
+├── models/
+│   └── stunet.py
+│
+├── dataloaders/
+│   └── nnunet_loader.py
+│
+├── metrics.py
+├── run_train.py
+├── run_inference.py
+├── run_test.py
+├── convert_to_nnunet.py
+├── Dockerfile
+└── README.md
 
-<p style="font-size:17px; line-height:1.55;">
-Projekt je popolnoma reproducibilen v Docker okolju na LSTWorker strežniku.
-</p>
+---
 
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">Zagon Docker okolja z GPU podporo</h3>
+## 🐳 Docker reproducibilnost
+
+Projekt je popolnoma reproducibilen v Docker okolju.
+
+### Zagon Docker okolja z GPU podporo
 
 ```bash
 docker run --rm -it --gpus all --shm-size=16g \
   -v /media/FastDataMama/peterT/AMS-Izziv-Peter:/workspace \
   ams-izziv-peter bash
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">Struktura skript</h3>
+🔄 Pretvorba ImageCAS → nnU‑Net format (obvezno)
+AMS izziv zahteva uporabo nnU‑Net formata (imagesTr/imagesTs/labelsTr).
 
-<table>
-<tr><th>Skripta</th><th>Namen</th></tr>
-<tr><td>run_train.py</td><td>Trening STU‑Net‑Lite+</td></tr>
-<tr><td>run_inference.py</td><td>Sliding‑window inferenca STU‑Net</td></tr>
-<tr><td>run_test.py</td><td>Evalvacija STU‑Net (Dice, HD95)</td></tr>
-<tr><td>nnUNetv2_train</td><td>Trening nnU‑Net baseline</td></tr>
-<tr><td>nnUNetv2_predict</td><td>Inferenca nnU‑Net baseline</td></tr>
-<tr><td>medpy_eval.py</td><td>Evalvacija nnU‑Net predikcij</td></tr>
-</table>
+Skripta: convert_to_nnunet.py
+Pretvori ImageCAS dataset v nnU‑Net strukturo:
 
-<hr style="border:1px solid #2b7cff;">
-
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-FAZA 1 — Osnovni STU‑Net trening (zaključeno)
-</h2>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>Implementiran STU‑Net‑Lite+ model.</li>
-<li>Pripravljen nnU‑Net kompatibilen dataloader.</li>
-<li>Uveden patch‑based training (128×128×128).</li>
-<li>Trening deluje na GPU.</li>
-<li>Model se shranjuje v <code>outputs/stunet/</code>.</li>
-</ul>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">Struktura projekta</h3>
-
+Dataset501_ImageCAS/
+│
+├── imagesTr/
+├── labelsTr/
+├── imagesTs/
+└── dataset.json
+Zagon pretvorbe
 bash
-/models  
-    stunet.py  
-/dataloaders  
-    nnunet_loader.py  
-run_train.py
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">Zagon</h3>
+python convert_to_nnunet.py \
+  --input_dir /media/FastDataMama/izziv/ImageCAS \
+  --output_dir data/nnunet_raw/Dataset501_ImageCAS
+🧩 Pregled skript
+Skripta	Namen
+run_train.py	Trening STU‑Net‑Lite+
+run_inference.py	Sliding‑window inferenca STU‑Net
+run_test.py	Evalvacija STU‑Net (Dice, HD95)
+nnUNetv2_train	Trening nnU‑Net baseline
+nnUNetv2_predict	Inferenca nnU‑Net baseline
+medpy_eval.py	Evalvacija nnU‑Net predikcij
+convert_to_nnunet.py	Pretvorba ImageCAS → nnU‑Net
 
+
+🛠 CLI argumenti (argparse)
+run_train.py
+--dataset_dir pot do nnU‑Net podatkov
+
+--model ime modela (stunet)
+
+--output_dir kam shraniti modele
+
+--epochs število epoh
+
+--resume (opcijsko) nadaljevanje treninga
+
+run_test.py
+--dataset_dir pot do test podatkov
+
+--model_path pot do model_best.pth
+
+--output_dir kam shraniti metrike
+
+run_inference.py
+--model_path pot do modela
+
+--input_dir pot do imagesTs
+
+--output_dir pot do predikcij
+
+🔄 4-fold cross‑validation (zahteva iz izziva)
+AMS izziv zahteva podporo za vse 4 folde.
+
+Primer zagona za fold 1
+bash
+python run_train.py --dataset_dir data/fold1 --model stunet --output_dir outputs/fold1 --epochs 200
+python run_test.py --dataset_dir data/fold1 --model_path outputs/fold1/model_best.pth --output_dir metrics/fold1
+Fold 2–4
+
+data/fold2/
+data/fold3/
+data/fold4/
+Vsak fold ima svojo dataset.json in svoj train/val/test split.
+
+🛠 Faze razvoja (checklist)
+[x] FAZA 1 — Osnovni STU‑Net trening
+
+[x] FAZA 2 — Validacija + Dice metrika
+
+[x] FAZA 3 — Sliding‑window inferenca
+
+[x] FAZA 4 — Eval na testnem setu (181–200)
+
+[x] FAZA 5 — nnU‑Net baseline
+
+[x] FAZA 6 — Primerjava modelov
+
+[x] FAZA 7 — Docker reproducibilnost
+
+[x] Pretvorba ImageCAS → nnU‑Net
+
+[x] Podpora za 4-fold cross‑validation
+
+🧪 FAZA 1 — Osnovni STU‑Net trening
+STU‑Net‑Lite+ implementiran
+
+nnU‑Net kompatibilen dataloader
+
+Patch‑based training (128×128×128)
+
+GPU pospešek
+
+Modeli v outputs/stunet/
+
+Uporabljeni spliti (moj projekt)
+Train: 1–160
+
+Val: 161–180
+
+Test: 181–200
+
+Razlog: doma imam slab internet, zato sem treniral na manjšem obsegu, da je učenje hitreje končalo.
+
+Zagon
 bash
 python run_train.py \
   --dataset_dir data/nnunet_raw/Dataset501_ImageCAS \
   --model stunet \
   --output_dir outputs/stunet \
   --epochs 1
-<hr style="border:1px solid #2b7cff;">
+📊 FAZA 2 — Validacija + Dice metrika
+Dice mean/std/min/max
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-FAZA 2 — Validacija in Dice metrika (zaključeno)
-</h2>
+Validacija po epochah
 
-<ul style="font-size:17px; line-height:1.55;">
-<li>Dodana Dice metrika (mean/std/min/max).</li>
-<li>Validacija po vsaki epohi.</li>
-<li>Train/val split: 1–160 / 161–180.</li>
-<li>Izpis statistike po epochah.</li>
-</ul>
+Train/val split: 1–160 / 161–180
 
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">Primer izpisa</h3>
-
+Primer izpisa
 bash
 [Epoch 1/1] Loss: 17.6550 | Dice mean=0.0012 | std=0.0034 | min=0.0000 | max=0.0148
-<hr style="border:1px solid #2b7cff;">
+🪟 FAZA 3 — Sliding‑window inferenca
+3D sliding‑window
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-FAZA 3 — Sliding‑window inference (zaključeno)
-</h2>
+Rekonstrukcija volumna
 
-<ul style="font-size:17px; line-height:1.55;">
-<li>3D sliding‑window inferenca.</li>
-<li>Rekonstrukcija celotnega volumna.</li>
-<li>Shranjevanje predikcij v .nii.gz.</li>
-<li>Skripta: <code>run_inference.py</code>.</li>
-</ul>
+Predikcije v .nii.gz
 
+Zagon
 bash
 python run_inference.py \
   --model_path outputs/stunet_long/model_best.pth \
   --input_dir data/nnunet_raw/Dataset501_ImageCAS/imagesTs \
   --output_dir outputs/stunet_predictions
-<hr style="border:1px solid #2b7cff;">
+🧪 FAZA 4 — Eval STU‑Net (test 181–200)
+Rezultati
+Mean Dice: 0.20
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-FAZA 4 — Eval STU‑Net (test 181–200)
-</h2>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>Eval na testnem delu CAS (181–200).</li>
-<li>Izračun Dice in HD95.</li>
-<li>GIF vizualizacija: <code>gif_AMSIzziv.gif</code>.</li>
-</ul>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">Rezultati</h3>
-
-<div style="background:#e8f2ff; padding:12px; border-radius:8px; font-size:17px;">
-<b>Mean Dice:</b> 0.20<br>
-<b>Mean HD95:</b> 175 mm
-</div>
+Mean HD95: 175 mm
 
 <p align="center">
 <img src="gif_AMSIzziv.gif" width="600">
 </p>
 
-<hr style="border:1px solid #2b7cff;">
+🧠 FAZA 5 — nnU‑Net baseline
+Rezultati
+Mean Dice: 0.77
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-FAZA 5 — nnU‑Net baseline (zaključeno)
-</h2>
+Mean IoU: 0.63
 
-<ul style="font-size:17px; line-height:1.55;">
-<li>Implementacija osnovnega nnU‑Net baseline.</li>
-<li>Trening na 1–160 (lokalni PC).</li>
-<li>Eval na internem validation splitu.</li>
-<li>Pridobljen <code>summary.json</code>.</li>
-<li>Baseline reproduciran v Dockerju.</li>
-</ul>
+Range Dice: 0.65–0.86
 
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">Rezultati</h3>
+⚔️ FAZA 6 — Primerjava modelov
+Model	Eval set	Mean Dice	Mean HD95
+STU‑Net	Test (181–200)	0.20	175 mm
+nnU‑Net baseline	Val (1–160)	0.77	–
 
-<div style="background:#e8f2ff; padding:12px; border-radius:8px; font-size:17px;">
-<b>Mean Dice:</b> 0.77<br>
-<b>Mean IoU:</b> 0.63<br>
-<b>Range Dice:</b> 0.65–0.86
-</div>
 
-<hr style="border:1px solid #2b7cff;">
+🐳 FAZA 7 — Docker reproducibilnost
+Dockerfile
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-FAZA 6 — Primerjava modelov
-</h2>
+Reproducibilni trening STU‑Net
 
-<table>
-<tr><th>Model</th><th>Eval set</th><th>Mean Dice</th><th>Mean HD95</th></tr>
-<tr><td>STU‑Net</td><td>Test (181–200)</td><td>0.20</td><td>175 mm</td></tr>
-<tr><td>nnU‑Net baseline</td><td>Val (1–160)</td><td>0.77</td><td>–</td></tr>
-</table>
+Reproducibilni trening nnU‑Net
 
-<hr style="border:1px solid #2b7cff;">
+Prilagojene poti in ukazi
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-FAZA 7 — Docker in reproducibilnost
-</h2>
+Celoten workflow preko CLI
 
-<ul style="font-size:17px; line-height:1.55;">
-<li>Dockerfile.</li>
-<li>Reproducibilni trening STU‑Net.</li>
-<li>Reproducibilni trening nnU‑Net.</li>
-<li>Prilagojene poti in ukazi.</li>
-<li>Celoten workflow je mogoče pognati iz CLI.</li>
-</ul>
+📈 Rezultati 200‑epoh STU‑Net treninga
+Train loss: 1.49 → ~1.0
 
-<hr style="border:1px solid #2b7cff;">
+Najboljši val Dice (mean): ≈ 0.27
 
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-Implementacije skript
-</h2>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">models/stunet.py</h3>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>Implementacija STU‑Net‑Lite+.</li>
-<li>ConvBlock3d, SEBlock3d, STUBlock3d.</li>
-<li><code>build_stunet()</code> vrne inicializiran model.</li>
-<li>Podpira AMP, channels_last_3d, torch.compile.</li>
-</ul>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">dataloaders/nnunet_loader.py</h3>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>Nalaganje NIfTI (.nii.gz) volumnov.</li>
-<li>imagesTr/imagesVal/imagesTs + labels struktura.</li>
-<li>Random 3D patch extraction.</li>
-<li>Oversampling foreground primerov.</li>
-<li>Optimiziran DataLoader (num_workers=6, pin_memory=True, persistent_workers=True, prefetch_factor=4).</li>
-</ul>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">run_train.py</h3>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>AMP (mixed precision).</li>
-<li><code>torch.compile(model)</code>.</li>
-<li>channels_last_3d.</li>
-<li>cudnn.benchmark=True.</li>
-<li>Validacija po epochah.</li>
-<li>Shranjevanje <code>model_best.pth</code> in <code>model_final.pth</code>.</li>
-</ul>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">metrics.py</h3>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>Dice metrika (mean/std/min/max).</li>
-</ul>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">run_inference.py</h3>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>Sliding‑window inferenca.</li>
-<li>Shranjevanje predikcij v .nii.gz.</li>
-</ul>
-
-<h3 style="color:#2b7cff; font-size:22px; font-weight:600;">run_test.py</h3>
-
-<ul style="font-size:17px; line-height:1.55;">
-<li>Eval na test setu.</li>
-<li>Primerjava STU‑Net vs nnU‑Net baseline.</li>
-</ul>
-
-<hr style="border:1px solid #2b7cff;">
-
-<h2 style="color:#2b7cff; font-size:26px; font-weight:700;">
-Rezultati 200‑epoh STU‑Net treninga
-</h2>
-
-<div style="background:#e8f2ff; padding:12px; border-radius:8px; font-size:17px;">
-<b>Train loss:</b> 1.49 → ~1.0<br>
-<b>Najboljši val Dice (mean):</b> ≈ 0.27<br>
-<b>Tipičen razpon val Dice:</b> 0.10–0.25
-</div>
+Tipičen razpon val Dice: 0.10–0.25
