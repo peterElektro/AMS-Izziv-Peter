@@ -53,6 +53,8 @@ Projekt je popolnoma reproducibilen v Docker okolju.
 docker run --rm -it --gpus all --shm-size=16g \
   -v /media/FastDataMama/peterT/AMS-Izziv-Peter:/workspace \
   ams-izziv-peter bash
+---
+
 🔄 Pretvorba ImageCAS → nnU‑Net format (obvezno)
 AMS izziv zahteva uporabo nnU‑Net formata (imagesTr/imagesTs/labelsTr).
 
