@@ -25,15 +25,12 @@ def hd95(pred, gt):
     if pred.sum() == 0 or gt.sum() == 0:
         return np.inf
 
-    # površine mask
     pred_surface = pred ^ binary_erosion(pred)
     gt_surface   = gt ^ binary_erosion(gt)
 
-    # distance transform
     dt_pred = distance_transform_edt(~pred_surface)
     dt_gt   = distance_transform_edt(~gt_surface)
 
-    # razdalje med površinami
     d_pred_to_gt = dt_gt[pred_surface]
     d_gt_to_pred = dt_pred[gt_surface]
 
@@ -56,24 +53,8 @@ def find_pred_file(pred_dir, case_id):
         if not name.endswith(".nii.gz"):
             continue
 
-        # vsebuje case ID (181, 0181, case_0181, ...)
-        if cid not in name and f"0{cid}" not in name and f"{cid.zfill(4)}" not in name:
-            continue
-
-        # STU-Net stil
-        if "pred" in name:
+        if cid in name or f"0{cid}" in name or f"{cid.zfill(4)}" in name:
             candidates.append(f)
-            continue
-
-        # nnU-Net stil
-        if name.startswith(cid):
-            candidates.append(f)
-            continue
-
-        # nnU-Net case_0181.nii.gz
-        if name.startswith(f"case_{cid.zfill(4)}"):
-            candidates.append(f)
-            continue
 
     if not candidates:
         return None
@@ -96,17 +77,14 @@ def find_gt_file(gt_dir, case_id):
         if not name.endswith(".nii.gz"):
             continue
 
-        # 181.nii.gz
         if name.startswith(cid):
             candidates.append(f)
             continue
 
-        # 181.label.nii.gz
         if f"{cid}.label" in name:
             candidates.append(f)
             continue
 
-        # case_0181.nii.gz
         if name.startswith(f"case_{cid.zfill(4)}"):
             candidates.append(f)
             continue
@@ -123,6 +101,7 @@ def find_gt_file(gt_dir, case_id):
 def evaluate_case(pred_path, gt_path):
     pred = nib.load(str(pred_path)).get_fdata().astype(np.uint8)
     gt   = nib.load(str(gt_path)).get_fdata().astype(np.uint8)
+
     print("  pred shape:", pred.shape)
     print("  gt   shape:", gt.shape)
 
@@ -156,7 +135,6 @@ def eval_model(pred_dir, gt_dir, csv_out):
 
         results.append([case_id, dsc, hd])
 
-    # CSV
     with open(csv_out, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["Case", "Dice", "HD95"])
@@ -175,15 +153,16 @@ def eval_model(pred_dir, gt_dir, csv_out):
 # Main
 # -------------------------
 if __name__ == "__main__":
+    # STU-Net eval
     eval_model(
-        pred_dir="outputs/stunet/predictions",
-        gt_dir="data_preproc/Dataset501_ImageCAS/labelsTs",
+        pred_dir="outputs/stunet/predictions_batch",
+        gt_dir="nnUNet_raw/Dataset501_ImageCAS/labelsTs",
         csv_out="eval_results_stunet_fast.csv"
     )
 
+    # nnU-Net eval (če želiš)
     eval_model(
         pred_dir="nnunet_preds",
         gt_dir="nnUNet_raw/Dataset501_ImageCAS/labelsTs",
         csv_out="eval_results_nnunet_fast.csv"
     )
-

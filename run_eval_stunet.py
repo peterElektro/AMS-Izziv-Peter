@@ -13,7 +13,6 @@ def dice_score(pred, gt):
 
 
 def hd95(pred, gt):
-    """Compute 95th percentile Hausdorff distance."""
     pred_pts = np.argwhere(pred > 0)
     gt_pts = np.argwhere(gt > 0)
 
@@ -26,8 +25,8 @@ def hd95(pred, gt):
     return np.percentile(np.hstack([d1, d2]), 95)
 
 
-def evaluate_case(clean_path, gt_path):
-    pred = nib.load(str(clean_path)).get_fdata().astype(np.uint8)
+def evaluate_case(pred_path, gt_path):
+    pred = nib.load(str(pred_path)).get_fdata().astype(np.uint8)
     gt = nib.load(str(gt_path)).get_fdata().astype(np.uint8)
 
     dsc = dice_score(pred, gt)
@@ -37,39 +36,42 @@ def evaluate_case(clean_path, gt_path):
 
 
 if __name__ == "__main__":
-    clean_dir = Path("predictions_batch")
-    gt_dir = Path("data_preproc/Dataset501_ImageCAS/labelsTs")
-    
-
+    pred_dir = Path("/workspace/outputs/stunet/predictions")
+    gt_dir = Path("/workspace/nnUNet_raw/Dataset501_ImageCAS/labelsTs")
 
     results = []
     csv_path = "eval_results_stunet.csv"
 
     for case_id in range(181, 201):
-        clean_path = clean_dir / f"prediction_{case_id}.nii.gz"
 
-        # GT lahko ima različne konvencije imen → vzamemo prvi match
-        candidates = list(gt_dir.glob(f"{case_id}*.nii.gz"))
-        if len(candidates) == 0:
+        # STU-Net predikcije: 181_0000.nii_pred.nii.gz
+        pred_candidates = list(pred_dir.glob(f"{case_id}_*.nii.gz"))
+        if len(pred_candidates) == 0:
+            print(f"[WARNING] Missing prediction for case {case_id}")
+            continue
+        pred_path = pred_candidates[0]
+
+        # GT: 181.nii.gz
+        gt_candidates = list(gt_dir.glob(f"{case_id}.nii.gz"))
+        if len(gt_candidates) == 0:
             print(f"[WARNING] Missing GT for case {case_id}")
             continue
-
-        gt_path = candidates[0]
+        gt_path = gt_candidates[0]
 
         print(f"\n=== Evaluating case {case_id} ===")
-        dsc, hd = evaluate_case(clean_path, gt_path)
+        dsc, hd = evaluate_case(pred_path, gt_path)
         print(f"Dice: {dsc:.4f}")
         print(f"HD95: {hd:.2f}")
 
         results.append([case_id, dsc, hd])
 
-    # Shrani CSV
+    # Save CSV
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Case", "Dice", "HD95"])
         writer.writerows(results)
 
-    # Povprečja
+    # Summary
     dices = [r[1] for r in results]
     hd95s = [r[2] for r in results]
 

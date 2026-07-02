@@ -125,6 +125,15 @@ class NnUNetDataset(Dataset):
     # FIND IMAGE + LABEL PATHS
     # -----------------------------
     def _find_paths(self, cid):
+
+        # Standard nnU-Net naming
+        img_path = self.images_dir / f"{cid}_0000.nii.gz"
+        lbl_path = self.labels_dir / f"{cid}.nii.gz"
+
+        if img_path.exists() and lbl_path.exists():
+            return img_path, lbl_path
+
+        # Legacy naming support
         if self.original_names:
             img_name = f"{cid}.img.nii.gz"
             lbl_name = f"{cid}.label.nii.gz"
@@ -152,6 +161,7 @@ class NnUNetDataset(Dataset):
                 if candidates:
                     return f, candidates[0]
 
+        # 🔥 PRAVILNO: ta vrstica mora biti ZNOTRAJ metode
         raise FileNotFoundError(f"Missing image/label for id {cid}")
 
     # -----------------------------
