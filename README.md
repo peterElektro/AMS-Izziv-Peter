@@ -181,106 +181,189 @@ Vsak fold vsebuje svoj `dataset.json` in svoj train/validation/test razrez.
 
 ---
 
-# ✅ Faze razvoja
+# ✅ Razvoj projekta
 
-- [x] FAZA 1 — Osnovni STU-Net trening
-- [x] FAZA 2 — Validacija + Dice metrika
-- [x] FAZA 3 — Sliding-window inferenca
-- [x] FAZA 4 — Eval na testnem setu
-- [x] FAZA 5 — nnU-Net baseline
-- [x] FAZA 6 — Primerjava modelov
-- [x] FAZA 7 — Docker reproducibilnost
-- [x] Pretvorba ImageCAS → nnU-Net
-- [x] Podpora za 4-fold cross-validation
+Projekt je bil razvit postopoma skozi več faz, od osnovne implementacije STU-Net do popolnoma reproducibilnega Docker okolja.
 
-🧪 FAZA 1 — Osnovni STU‑Net trening
-STU‑Net‑Lite+ implementiran
+| Faza | Opis | Status |
+|------|------|:------:|
+| 🧪 FAZA 1 | Osnovni STU-Net trening | ✅ |
+| 📊 FAZA 2 | Validacija in Dice metrika | ✅ |
+| 🪟 FAZA 3 | Sliding-window inferenca | ✅ |
+| 📈 FAZA 4 | Evalvacija na testnem setu | ✅ |
+| 🧠 FAZA 5 | nnU-Net baseline | ✅ |
+| ⚔️ FAZA 6 | Primerjava modelov | ✅ |
+| 🐳 FAZA 7 | Docker reproducibilnost | ✅ |
+| 🔄 | Pretvorba ImageCAS → nnU-Net | ✅ |
+| 📂 | 4-fold Cross Validation | ✅ |
 
-nnU‑Net kompatibilen dataloader
+---
 
-Patch‑based training (128×128×128)
+# 🧪 FAZA 1 — Osnovni STU-Net trening
 
-GPU pospešek
+### Izvedene funkcionalnosti
 
-Modeli v outputs/stunet/
+- ✅ Implementacija **STU-Net-Lite+**
+- ✅ nnU-Net kompatibilen dataloader
+- ✅ Patch-based training (**128×128×128**)
+- ✅ GPU pospešen trening
+- ✅ Samodejno shranjevanje modelov
 
-Uporabljeni spliti (moj projekt)
-Train: 1–160
+Modeli se shranjujejo v:
 
-Val: 161–180
+```text
+outputs/stunet/
+```
 
-Test: 181–200
+## Uporabljeni razrez podatkov
 
-Razlog: doma imam slab internet, zato sem treniral na manjšem obsegu, da je učenje hitreje končalo.
+| Namen | Primeri |
+|--------|---------|
+| Train | 1–160 |
+| Validation | 161–180 |
+| Test | 181–200 |
 
-Zagon
-bash
+> **Opomba**
+>
+> Zaradi počasnejše internetne povezave sem za razvoj uporabil manjši del podatkovnega nabora. Cilj je bil hitrejši razvoj in testiranje implementacije.
+
+### Zagon treninga
+
+```bash
 python run_train.py \
-  --dataset_dir data/nnunet_raw/Dataset501_ImageCAS \
-  --model stunet \
-  --output_dir outputs/stunet \
-  --epochs 1
-📊 FAZA 2 — Validacija + Dice metrika
-Dice mean/std/min/max
+    --dataset_dir data/nnunet_raw/Dataset501_ImageCAS \
+    --model stunet \
+    --output_dir outputs/stunet \
+    --epochs 1
+```
 
-Validacija po epochah
+---
 
-Train/val split: 1–160 / 161–180
+# 📊 FAZA 2 — Validacija in Dice metrika
 
-Primer izpisa
-bash
-[Epoch 1/1] Loss: 17.6550 | Dice mean=0.0012 | std=0.0034 | min=0.0000 | max=0.0148
-🪟 FAZA 3 — Sliding‑window inferenca
-3D sliding‑window
+### Implementirano
 
-Rekonstrukcija volumna
+- ✅ Dice Mean
+- ✅ Dice Std
+- ✅ Dice Min
+- ✅ Dice Max
+- ✅ Validacija po vsaki epohi
 
-Predikcije v .nii.gz
+Train / Validation razrez:
 
-Zagon
-bash
+```text
+Train: 1–160
+Validation: 161–180
+```
+
+### Primer izpisa
+
+```text
+[Epoch 1/1]
+Loss: 17.6550
+
+Dice
+-------------------------
+Mean : 0.0012
+Std  : 0.0034
+Min  : 0.0000
+Max  : 0.0148
+```
+
+---
+
+# 🪟 FAZA 3 — Sliding-window inferenca
+
+### Implementirano
+
+- ✅ 3D Sliding Window
+- ✅ Rekonstrukcija celotnega volumna
+- ✅ Shranjevanje `.nii.gz` predikcij
+
+### Zagon
+
+```bash
 python run_inference.py \
-  --model_path outputs/stunet_long/model_best.pth \
-  --input_dir data/nnunet_raw/Dataset501_ImageCAS/imagesTs \
-  --output_dir outputs/stunet_predictions
-🧪 FAZA 4 — Eval STU‑Net (test 181–200)
-Rezultati
-Mean Dice: 0.20
+    --model_path outputs/stunet_long/model_best.pth \
+    --input_dir data/nnunet_raw/Dataset501_ImageCAS/imagesTs \
+    --output_dir outputs/stunet_predictions
+```
 
-Mean HD95: 175 mm
+---
+
+# 📈 FAZA 4 — Evalvacija STU-Net
+
+Evalvacija je bila izvedena na testnem delu podatkov (**181–200**).
+
+## Rezultati
+
+| Metrika | Rezultat |
+|---------|----------:|
+| Mean Dice | **0.20** |
+| Mean HD95 | **175 mm** |
+
+### Vizualizacija
 
 <p align="center">
-<img src="gif_AMSIzziv.gif" width="600">
+<img src="gif_AMSIzziv.gif" width="700">
 </p>
 
-🧠 FAZA 5 — nnU‑Net baseline
-Rezultati
-Mean Dice: 0.77
+---
 
-Mean IoU: 0.63
+# 🧠 FAZA 5 — nnU-Net Baseline
 
-Range Dice: 0.65–0.86
+Za primerjavo je bil uporabljen tudi osnovni nnU-Net model.
 
-⚔️ FAZA 6 — Primerjava modelov
-Model	Eval set	Mean Dice	Mean HD95
-STU‑Net	Test (181–200)	0.20	175 mm
-nnU‑Net baseline	Val (1–160)	0.77	–
+## Rezultati
 
+| Metrika | Rezultat |
+|---------|----------:|
+| Mean Dice | **0.77** |
+| Mean IoU | **0.63** |
+| Dice Range | **0.65–0.86** |
 
-🐳 FAZA 7 — Docker reproducibilnost
-Dockerfile
+---
 
-Reproducibilni trening STU‑Net
+# ⚔️ FAZA 6 — Primerjava modelov
 
-Reproducibilni trening nnU‑Net
+| Model | Evalvacijski sklop | Mean Dice | Mean HD95 |
+|------|-------------------|----------:|----------:|
+| **STU-Net** | Test (181–200) | **0.20** | **175 mm** |
+| **nnU-Net** | Validation | **0.77** | — |
 
-Prilagojene poti in ukazi
+---
 
-Celoten workflow preko CLI
+# 🐳 FAZA 7 — Docker reproducibilnost
 
-📈 Rezultati 200‑epoh STU‑Net treninga
-Train loss: 1.49 → ~1.0
+Projekt je v celoti reproducibilen z uporabo Dockerja.
 
-Najboljši val Dice (mean): ≈ 0.27
+Vključuje:
 
-Tipičen razpon val Dice: 0.10–0.25
+- ✅ Dockerfile
+- ✅ Reproducibilen trening STU-Net
+- ✅ Reproducibilen trening nnU-Net
+- ✅ Prilagojene poti in CLI ukaze
+- ✅ Celoten workflow od treninga do evalvacije
+
+---
+
+# 📈 Rezultati po 200 epohah treninga
+
+| Metrika | Vrednost |
+|---------|---------:|
+| Začetni Train Loss | **1.49** |
+| Končni Train Loss | **~1.0** |
+| Najboljši Validation Dice | **≈ 0.27** |
+| Tipičen Validation Dice | **0.10–0.25** |
+
+> **Povzetek**
+>
+> Implementacija uspešno podpira celoten cevovod:
+>
+> - pripravo podatkov,
+> - trening,
+> - validacijo,
+> - inferenco,
+> - evalvacijo,
+> - primerjavo z nnU-Net baseline,
+> - popolno reproducibilnost v Docker okolju.
